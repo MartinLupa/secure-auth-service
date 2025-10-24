@@ -1,3 +1,6 @@
+"use client"
+
+import { verifyOTPAction } from "@/actions"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -17,20 +20,37 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp"
+import { redirect } from "next/navigation"
+import { useActionState } from "react"
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
+import { Terminal } from "lucide-react"
 
 export function OTPForm({ ...props }: React.ComponentProps<typeof Card>) {
+  const [state, formAction, isPending] = useActionState(verifyOTPAction, null)
+
+  if (state?.success) {
+    redirect("/logged")
+  }
+
   return (
     <Card {...props}>
       <CardHeader>
         <CardTitle>Enter verification code</CardTitle>
+        {state?.error && (<Alert variant="destructive">
+          <Terminal />
+          <AlertTitle>Login error</AlertTitle>
+          <AlertDescription>
+            {state.error}
+          </AlertDescription>
+        </Alert>)}
         <CardDescription>We sent a 6-digit code to your email.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form>
+        <form action={formAction}>
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="otp">Verification code</FieldLabel>
-              <InputOTP maxLength={6} id="otp" required>
+              <InputOTP maxLength={6} id="otp" name="otp" required>
                 <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border">
                   <InputOTPSlot index={0} />
                   <InputOTPSlot index={1} />
@@ -45,7 +65,9 @@ export function OTPForm({ ...props }: React.ComponentProps<typeof Card>) {
               </FieldDescription>
             </Field>
             <FieldGroup>
-              <Button type="submit">Verify</Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? 'Logging in...' : 'Login'}
+              </Button>
               <FieldDescription className="text-center">
                 Didn&apos;t receive the code? <a href="#">Resend</a>
               </FieldDescription>

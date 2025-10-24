@@ -31,8 +31,8 @@ export function LoginForm({
   if (state?.success) {
     // set cookies
 
-    // redirect to logged in page
-    redirect('/logged')
+    // redirect to otp verification page
+    redirect('/otp/verify')
   }
 
   return (
