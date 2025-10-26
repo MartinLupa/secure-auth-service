@@ -21,6 +21,7 @@ import { Terminal } from "lucide-react"
 import { loginAction } from "@/actions"
 import { useActionState } from "react"
 import { redirect } from "next/navigation"
+import { useCookies } from 'next-client-cookies';
 
 export function LoginForm({
   className,
@@ -28,9 +29,9 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const [state, formAction, isPending] = useActionState(loginAction, null)
 
-  if (state?.success) {
-    // set cookies
+  console.log("state.data: ", state?.data)
 
+  if (state?.success) {
     // redirect to otp verification page
     redirect('/otp/verify')
   }

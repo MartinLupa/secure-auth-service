@@ -1,4 +1,6 @@
-import { redirect } from "next/navigation"
+"use server"
+
+import { cookies } from "next/headers"
 
 export async function loginAction(prevState: any, formData: FormData) {
  const email = formData.get('email') as string
@@ -20,7 +22,10 @@ export async function loginAction(prevState: any, formData: FormData) {
    return { error: error.error || 'Login failed' }
   }
 
-  const data = await response.json()
+  const { data } = await response.json()
+
+  const cookieStore = await cookies()
+  cookieStore.set('login_intent', data.email)
 
   return { success: true, data }
  } catch (error) {
@@ -71,10 +76,13 @@ export async function verifyOTPAction(prevState: any, formData: FormData) {
  console.log("OTP code from action: ", otpCode)
 
  try {
+  const cookieStore = await cookies()
+  const loginIntentCookie = cookieStore.get('login_intent')
+
   const response = await fetch(`http://localhost:8000/otp/verify`, {
    method: 'POST',
    headers: { 'Content-Type': 'application/json' },
-   body: JSON.stringify({ otp_code: otpCode }),
+   body: JSON.stringify({ email: loginIntentCookie?.value, otp: otpCode }),
   })
 
   if (!response.ok) {

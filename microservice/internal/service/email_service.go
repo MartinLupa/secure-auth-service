@@ -16,17 +16,17 @@ type EmailService interface {
 
 type emailService struct {
 	mailgun *mailgun.Client
-	config  *config.MailgunConfig
+	config  *config.MailingConfig
 }
 
-func NewEmailService(cfg *config.MailgunConfig) EmailService {
+func NewEmailService(cfg *config.MailingConfig) EmailService {
 	mg := mailgun.NewMailgun(cfg.APIKey)
 
 	return &emailService{mailgun: mg, config: cfg}
 }
 
 func (s *emailService) SendWelcomeEmail(to, fullName string) error {
-	sender := "mlupgropdevprojects@gmail.com"
+	sender := s.config.EmailFrom
 	subject := "Welcome to Secure Auth Service"
 	body := "Hello " + fullName + ",\n\nWelcome to Secure Auth Service! We're glad to have you on board.\n\nBest regards,\nSecure Auth Service Team"
 	recipient := to
@@ -36,7 +36,6 @@ func (s *emailService) SendWelcomeEmail(to, fullName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	// Send the message with a 10-second timeout
 	resp, err := s.mailgun.Send(ctx, message)
 
 	fmt.Println("Mailgun response:", resp)
@@ -52,6 +51,25 @@ func (s *emailService) SendWelcomeEmail(to, fullName string) error {
 }
 
 func (s *emailService) SendOTPEmail(to, otp string) error {
-	// Placeholder for sending OTP email logic
+	sender := s.config.EmailFrom
+	subject := "Your One-Time Password (OTP)"
+	body := "Your OTP is: " + otp + "\n\nThis code is valid for 5 minutes."
+	recipient := to
+
+	message := mailgun.NewMessage(s.config.Domain, sender, subject, body, recipient)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	resp, err := s.mailgun.Send(ctx, message)
+
+	fmt.Println("Mailgun response:", resp)
+	fmt.Println("Mailgun error:", err)
+
+	if err != nil {
+		return fmt.Errorf("failed to send OTP email: %v", err)
+	}
+
+	fmt.Printf("ID: %s Resp: %s\n", resp.ID, resp.Message)
 	return nil
 }

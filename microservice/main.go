@@ -34,7 +34,7 @@ func main() {
 
 	// Layer initialization
 	authRepo := repository.NewUserRepository(db)
-	emailService := service.NewEmailService(&cfg.Mailgun)
+	emailService := service.NewEmailService(&cfg.Mailing)
 	authService := service.NewAuthService(authRepo, emailService)
 	authHandler := handlers.NewAuthHandler(authService)
 
@@ -51,6 +51,8 @@ func main() {
 	// Routes
 	router.POST("/login", authHandler.Login)
 	router.POST("/signup", authHandler.Signup)
+	router.POST("/otp/verify", authHandler.VerifyOTP)
+	router.POST("/otp/resend", authHandler.ResendOTP)
 
 	err = router.Run(cfg.Server.Port)
 	if err != nil {

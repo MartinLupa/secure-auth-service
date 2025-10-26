@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+
 	"github.com/MartinLupa/secure-auth-service/microservice/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -74,5 +76,62 @@ func (h *AuthHandler) Signup(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "signup successful",
 		"data":    user,
+	})
+}
+
+func (h *AuthHandler) VerifyOTP(c *gin.Context) {
+	var otpData struct {
+		Email string `json:"email" binding:"required,email"`
+		OTP   string `json:"otp" binding:"required,len=6"`
+	}
+
+	err := c.ShouldBindJSON(&otpData)
+	fmt.Println("[VerifyOTP] Email and OTP received in handler: ", otpData.Email, otpData.OTP)
+	fmt.Println("[VerifyOTP] Error from binding: ", err)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": "Email and OTP are required.",
+		})
+		return
+	}
+
+	_, err = h.authService.VerifyOTP(otpData.Email, otpData.OTP)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"message": "OTP verification successful",
+	})
+}
+
+func (h *AuthHandler) ResendOTP(c *gin.Context) {
+	var requestData struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+
+	err := c.ShouldBindJSON(&requestData)
+
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": "Valid email is required.",
+		})
+		return
+	}
+
+	err = h.authService.ResendOTP(requestData.Email)
+
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"message": "OTP resent successfully",
 	})
 }

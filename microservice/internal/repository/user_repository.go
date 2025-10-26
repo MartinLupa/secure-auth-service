@@ -16,6 +16,7 @@ var (
 type UserRepository interface {
 	CreateUser(user *models.User) (*models.User, error)
 	GetUserByEmail(email string) (*models.User, error)
+	UpdateOTPSecret(email string, otpSecret string) error
 }
 
 type userRepository struct {
@@ -43,7 +44,7 @@ func (r *userRepository) CreateUser(user *models.User) (*models.User, error) {
 func (r *userRepository) GetUserByEmail(email string) (*models.User, error) {
 	user := new(models.User)
 	err := r.db.Model(user).
-		Column("full_name", "email", "password").
+		Column("full_name", "email", "password", "otp_secret").
 		Where("email = ?", email).
 		Select()
 
@@ -55,4 +56,13 @@ func (r *userRepository) GetUserByEmail(email string) (*models.User, error) {
 	}
 
 	return user, nil
+}
+
+func (r *userRepository) UpdateOTPSecret(email string, otpSecret string) error {
+	_, err := r.db.Model(&models.User{Email: email, OTPSecret: otpSecret}).
+		Column("otp_secret").
+		Where("email = ?", email).
+		Update()
+
+	return err
 }

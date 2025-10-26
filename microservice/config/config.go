@@ -11,7 +11,7 @@ import (
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
-	Mailgun  MailgunConfig
+	Mailing  MailingConfig
 }
 
 type ServerConfig struct {
@@ -25,9 +25,12 @@ type DatabaseConfig struct {
 	Host     string
 }
 
-type MailgunConfig struct {
+type MailingConfig struct {
+	// Provider
 	Domain string
 	APIKey string
+	// Sender
+	EmailFrom string
 }
 
 func Load() (*Config, error) {
@@ -46,9 +49,10 @@ func Load() (*Config, error) {
 			Name:     os.Getenv("DB_NAME"),
 			Host:     os.Getenv("DB_HOST"),
 		},
-		Mailgun: MailgunConfig{
-			Domain: os.Getenv("MAILGUN_DOMAIN"),
-			APIKey: os.Getenv("MAILGUN_API_KEY"),
+		Mailing: MailingConfig{
+			Domain:    os.Getenv("MAILGUN_DOMAIN"),
+			APIKey:    os.Getenv("MAILGUN_API_KEY"),
+			EmailFrom: os.Getenv("EMAIL_FROM"),
 		},
 	}
 
