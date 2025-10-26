@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"fmt"
-
 	"github.com/MartinLupa/secure-auth-service/microservice/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -86,8 +84,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	}
 
 	err := c.ShouldBindJSON(&otpData)
-	fmt.Println("[VerifyOTP] Email and OTP received in handler: ", otpData.Email, otpData.OTP)
-	fmt.Println("[VerifyOTP] Error from binding: ", err)
+
 	if err != nil {
 		c.JSON(400, gin.H{
 			"error": "Email and OTP are required.",
@@ -95,8 +92,8 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	_, err = h.authService.VerifyOTP(otpData.Email, otpData.OTP)
-	if err != nil {
+	valid, err := h.authService.VerifyOTP(otpData.Email, otpData.OTP)
+	if err != nil || !valid {
 		c.JSON(400, gin.H{
 			"error": err.Error(),
 		})

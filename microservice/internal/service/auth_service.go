@@ -59,7 +59,7 @@ func (s *authService) Login(email, password string) (*models.User, error) {
 	}
 
 	fmt.Println("OTP Code: ", otpCode)
-	// s.emailService.SendOTPEmail(user.Email, otpCode)
+	s.emailService.SendOTPEmail(user.Email, otpCode)
 
 	return user, nil
 }
@@ -88,13 +88,13 @@ func (s *authService) Signup(fullName, email, password, confirmPassword string) 
 	}
 
 	if user != nil {
-		// s.emailService.SendWelcomeEmail(user.Email, fullName)
+		s.emailService.SendWelcomeEmail(user.Email, fullName)
 	}
 
 	return user, nil
 }
 
-func (s *authService) VerifyOTP(email, code string) (bool, error) {
+func (s *authService) VerifyOTP(email, passcode string) (bool, error) {
 	user, err := s.userRepo.GetUserByEmail(email)
 
 	if err != nil {
@@ -105,7 +105,7 @@ func (s *authService) VerifyOTP(email, code string) (bool, error) {
 		return false, errors.New("no OTP secret found for user")
 	}
 
-	valid, err := otp.ValidateOTP(code, user.OTPSecret)
+	valid, err := otp.ValidateOTP(passcode, user.OTPSecret)
 
 	if err != nil {
 		return false, ErrInvalidOTP
@@ -115,25 +115,25 @@ func (s *authService) VerifyOTP(email, code string) (bool, error) {
 }
 
 func (s *authService) ResendOTP(email string) error {
-	// user, err := s.userRepo.GetUserByEmail(email)
+	user, err := s.userRepo.GetUserByEmail(email)
 
-	// if err != nil {
-	// 	return err
-	// }
+	if err != nil {
+		return err
+	}
 
-	// otpCode, secret, err := otp.GenerateOTP(email, "mlupgropdevprojects@gmail.com")
+	otpCode, secret, err := otp.GenerateOTP(email, "mlupgropdevprojects@gmail.com")
 
-	// if err != nil {
-	// 	return err
-	// }
-	// err = s.userRepo.UpdateOTPSecret(email, secret)
+	if err != nil {
+		return err
+	}
+	err = s.userRepo.UpdateOTPSecret(email, secret)
 
-	// if err != nil {
-	// 	return err
-	// }
+	if err != nil {
+		return err
+	}
 
-	// fmt.Println("Resent OTP Code: ", otpCode)
-	// s.emailService.SendOTPEmail(user.Email, otpCode)
+	fmt.Println("Resent OTP Code: ", otpCode)
+	s.emailService.SendOTPEmail(user.Email, otpCode)
 
 	return nil
 }

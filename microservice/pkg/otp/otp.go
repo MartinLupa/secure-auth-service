@@ -7,7 +7,7 @@ import (
 	"github.com/pquerna/otp/totp"
 )
 
-func GenerateOTP(email, issuer string) (string, string, error) {
+func GenerateOTP(email, issuer string) (otpCode, secret string, err error) {
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      issuer,
 		AccountName: email,
@@ -17,7 +17,7 @@ func GenerateOTP(email, issuer string) (string, string, error) {
 		return "", "", fmt.Errorf("failed to generate OTP key: %v", err)
 	}
 
-	otpCode, err := totp.GenerateCode(key.Secret(), time.Now())
+	otpCode, err = totp.GenerateCode(key.Secret(), time.Now())
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate OTP code: %v", err)
 	}
@@ -25,6 +25,8 @@ func GenerateOTP(email, issuer string) (string, string, error) {
 	return otpCode, key.Secret(), nil
 }
 
-func ValidateOTP(secret, code string) (bool, error) {
-	return true, nil
+func ValidateOTP(passcode, secret string) (bool, error) {
+	valid := totp.Validate(passcode, secret)
+
+	return valid, nil
 }
