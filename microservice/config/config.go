@@ -4,18 +4,32 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Mailing  MailingConfig
+	Server       ServerConfig
+	AuthService  AuthServiceConfig
+	EmailService EmailServiceConfig
+	Database     DatabaseConfig
 }
 
 type ServerConfig struct {
 	Port string
+}
+
+type AuthServiceConfig struct {
+	OTPIssuer      string
+	JWTSecret      string
+	AccessTokenTTL time.Duration
+}
+
+type EmailServiceConfig struct {
+	Domain    string
+	APIKey    string
+	EmailFrom string
 }
 
 type DatabaseConfig struct {
@@ -23,14 +37,6 @@ type DatabaseConfig struct {
 	Password string
 	Name     string
 	Host     string
-}
-
-type MailingConfig struct {
-	// Provider
-	Domain string
-	APIKey string
-	// Sender
-	EmailFrom string
 }
 
 func Load() (*Config, error) {
@@ -43,16 +49,21 @@ func Load() (*Config, error) {
 		Server: ServerConfig{
 			Port: os.Getenv("PORT"),
 		},
+		AuthService: AuthServiceConfig{
+			OTPIssuer:      os.Getenv("OTP_ISSUER"),
+			JWTSecret:      os.Getenv("JWT_SECRET"),
+			AccessTokenTTL: 15 * time.Minute,
+		},
+		EmailService: EmailServiceConfig{
+			Domain:    os.Getenv("MAILGUN_DOMAIN"),
+			APIKey:    os.Getenv("MAILGUN_API_KEY"),
+			EmailFrom: os.Getenv("EMAIL_FROM"),
+		},
 		Database: DatabaseConfig{
 			User:     os.Getenv("DB_USER"),
 			Password: os.Getenv("DB_PASSWORD"),
 			Name:     os.Getenv("DB_NAME"),
 			Host:     os.Getenv("DB_HOST"),
-		},
-		Mailing: MailingConfig{
-			Domain:    os.Getenv("MAILGUN_DOMAIN"),
-			APIKey:    os.Getenv("MAILGUN_API_KEY"),
-			EmailFrom: os.Getenv("EMAIL_FROM"),
 		},
 	}
 

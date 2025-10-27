@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+
 	"github.com/MartinLupa/secure-auth-service/microservice/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -77,7 +79,7 @@ func (h *AuthHandler) Signup(c *gin.Context) {
 	})
 }
 
-func (h *AuthHandler) VerifyOTP(c *gin.Context) {
+func (h *AuthHandler) ValidateOTP(c *gin.Context) {
 	var otpData struct {
 		Email string `json:"email" binding:"required,email"`
 		OTP   string `json:"otp" binding:"required,len=6"`
@@ -92,8 +94,12 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	valid, err := h.authService.VerifyOTP(otpData.Email, otpData.OTP)
-	if err != nil || !valid {
+	jwtToken, err := h.authService.ValidateOTP(otpData.Email, otpData.OTP)
+
+	fmt.Println("jwtToken	in handler: ", jwtToken)
+	fmt.Println("jwtToken error in handler: ", err)
+
+	if err != nil || jwtToken == "" {
 		c.JSON(400, gin.H{
 			"error": err.Error(),
 		})
@@ -102,6 +108,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"message": "OTP verification successful",
+		"token":   jwtToken,
 	})
 }
 
@@ -130,5 +137,30 @@ func (h *AuthHandler) ResendOTP(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"message": "OTP resent successfully",
+	})
+}
+
+func (h *AuthHandler) ValidateJWT(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+
+	if token == "" {
+		c.JSON(400, gin.H{
+			"error": "Authorization header is required.",
+		})
+		return
+	}
+
+	user, err := h.authService.ValidateJWT(token)
+
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"message": "JWT validation successful",
+		"user":    user,
 	})
 }

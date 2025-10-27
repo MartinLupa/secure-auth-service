@@ -1,9 +1,14 @@
 -- Creating table for users
 CREATE TABLE IF NOT EXISTS users (
+    -- Replace id with
+    -- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     id SERIAL PRIMARY KEY,
     full_name VARCHAR NOT NULL,
     email VARCHAR UNIQUE NOT NULL,
     password VARCHAR NOT NULL,
+    -- password_hash VARCHAR NOT NULL,
+    -- last_login TIMESTAMP,
+    otp_secret VARCHAR,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

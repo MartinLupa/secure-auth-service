@@ -15,11 +15,11 @@ type EmailService interface {
 }
 
 type emailService struct {
+	config  *config.EmailServiceConfig
 	mailgun *mailgun.Client
-	config  *config.MailingConfig
 }
 
-func NewEmailService(cfg *config.MailingConfig) EmailService {
+func NewEmailService(cfg *config.EmailServiceConfig) EmailService {
 	mg := mailgun.NewMailgun(cfg.APIKey)
 
 	return &emailService{mailgun: mg, config: cfg}

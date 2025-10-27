@@ -4,8 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/MartinLupa/secure-auth-service/microservice/config"
 	"github.com/MartinLupa/secure-auth-service/microservice/internal/models"
 	"github.com/MartinLupa/secure-auth-service/microservice/internal/repository"
+	"github.com/MartinLupa/secure-auth-service/microservice/pkg/jwt"
+
 	"github.com/MartinLupa/secure-auth-service/microservice/pkg/otp"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -14,22 +17,26 @@ var (
 	ErrInvalidCredentials = errors.New("email and password do not match")
 	ErrPasswordMismatch   = errors.New("passwords do not match")
 	ErrInvalidOTP         = errors.New("invalid OTP code")
+	ErrGeneratingJWT      = errors.New("error generating JWT token")
 )
 
 type AuthService interface {
 	Login(email, password string) (*models.User, error)
 	Signup(fullName, email, password, confirmPassword string) (*models.User, error)
-	VerifyOTP(email, code string) (bool, error)
+	ValidateOTP(email, code string) (string, error)
 	ResendOTP(email string) error
+	ValidateJWT(tokenString string) (*models.User, error)
 }
 
 type authService struct {
+	config       *config.AuthServiceConfig
 	userRepo     repository.UserRepository
 	emailService EmailService
 }
 
-func NewAuthService(userRepo repository.UserRepository, emailService EmailService) AuthService {
+func NewAuthService(cfg *config.AuthServiceConfig, userRepo repository.UserRepository, emailService EmailService) AuthService {
 	return &authService{
+		config:       cfg,
 		userRepo:     userRepo,
 		emailService: emailService,
 	}
@@ -46,7 +53,7 @@ func (s *authService) Login(email, password string) (*models.User, error) {
 		return nil, ErrInvalidCredentials
 	}
 
-	otpCode, secret, err := otp.GenerateOTP(email, "mlupgropdevprojects@gmail.com")
+	otpCode, secret, err := otp.GenerateOTP(email, s.config.OTPIssuer)
 
 	if err != nil {
 		return nil, err
@@ -94,24 +101,30 @@ func (s *authService) Signup(fullName, email, password, confirmPassword string) 
 	return user, nil
 }
 
-func (s *authService) VerifyOTP(email, passcode string) (bool, error) {
+func (s *authService) ValidateOTP(email, passcode string) (string, error) {
 	user, err := s.userRepo.GetUserByEmail(email)
 
 	if err != nil {
-		return false, err
+		return "", err
 	}
 
 	if user.OTPSecret == "" {
-		return false, errors.New("no OTP secret found for user")
+		return "", errors.New("no OTP secret found for user")
 	}
 
-	valid, err := otp.ValidateOTP(passcode, user.OTPSecret)
+	_, err = otp.ValidateOTP(passcode, user.OTPSecret)
 
 	if err != nil {
-		return false, ErrInvalidOTP
+		return "", ErrInvalidOTP
 	}
 
-	return valid, nil
+	tokenString, err := jwt.GenerateAccessToken(user, s.config.JWTSecret, s.config.AccessTokenTTL)
+
+	if err != nil {
+		return "", ErrGeneratingJWT
+	}
+
+	return tokenString, nil
 }
 
 func (s *authService) ResendOTP(email string) error {
@@ -121,7 +134,7 @@ func (s *authService) ResendOTP(email string) error {
 		return err
 	}
 
-	otpCode, secret, err := otp.GenerateOTP(email, "mlupgropdevprojects@gmail.com")
+	otpCode, secret, err := otp.GenerateOTP(email, s.config.OTPIssuer)
 
 	if err != nil {
 		return err
@@ -136,4 +149,23 @@ func (s *authService) ResendOTP(email string) error {
 	s.emailService.SendOTPEmail(user.Email, otpCode)
 
 	return nil
+}
+
+func (s *authService) ValidateJWT(tokenString string) (*models.User, error) {
+	fmt.Println("[ValidateJWT service] tokenString: ", tokenString)
+
+	claims, err := jwt.ValidateAccessToken(tokenString, s.config.JWTSecret)
+
+	fmt.Println("[ValidateJWT service] claims: ", claims)
+	fmt.Println("[ValidateJWT service] err: ", err)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := s.userRepo.GetUserByEmail((*claims)["email"].(string))
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }

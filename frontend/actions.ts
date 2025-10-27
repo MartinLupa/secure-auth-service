@@ -73,13 +73,11 @@ export async function verifyOTPAction(prevState: any, formData: FormData) {
   return { error: 'OTP code is required.' }
  }
 
- console.log("OTP code from action: ", otpCode)
-
  try {
   const cookieStore = await cookies()
   const loginIntentCookie = cookieStore.get('login_intent')
 
-  const response = await fetch(`http://localhost:8000/otp/verify`, {
+  const response = await fetch(`http://localhost:8000/otp/validate`, {
    method: 'POST',
    headers: { 'Content-Type': 'application/json' },
    body: JSON.stringify({ email: loginIntentCookie?.value, otp: otpCode }),
@@ -90,7 +88,12 @@ export async function verifyOTPAction(prevState: any, formData: FormData) {
    return { error: error.error || 'OTP verification failed' }
   }
 
-  return { success: true }
+  const { token } = await response.json()
+
+  cookieStore.delete('login_intent')
+  cookieStore.set('session_token', token)
+
+  return { success: true, token }
 
  } catch (error) {
   return { error: 'It was not possible to verify the OTP code. Please try again or click on resend code.' }
