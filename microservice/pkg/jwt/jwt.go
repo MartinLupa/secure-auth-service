@@ -35,15 +35,12 @@ func GenerateAccessToken(user *models.User, jwtSecret string, accessTokenTTL tim
 
 func ValidateAccessToken(tokenString, jwtSecret string) (*jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
-		// Validate the signing method
+
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, ErrInvalidToken
 		}
 		return []byte(jwtSecret), nil
 	})
-
-	// fmt.Println("Parsed Token:", token)
-	// fmt.Println("Parse Error:", err)
 
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
@@ -51,7 +48,7 @@ func ValidateAccessToken(tokenString, jwtSecret string) (*jwt.MapClaims, error) 
 		}
 		return nil, ErrInvalidToken
 	}
-	// Extract and validate claims
+
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return &claims, nil
 	}
