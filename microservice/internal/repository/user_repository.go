@@ -11,6 +11,7 @@ var (
 	ErrUserCreation      = errors.New("failed to create user")
 	ErrUserAlreadyExists = errors.New("user already exists")
 	ErrUserNotFound      = errors.New("user not found")
+	ErrRetrievingUser    = errors.New("failed to retrieve user")
 )
 
 type UserRepository interface {
@@ -44,7 +45,7 @@ func (r *userRepository) CreateUser(user *models.User) (*models.User, error) {
 func (r *userRepository) GetUserByEmail(email string) (*models.User, error) {
 	user := new(models.User)
 	err := r.db.Model(user).
-		Column("full_name", "email", "password", "otp_secret").
+		Column("id", "full_name", "email", "password_hash", "otp_secret").
 		Where("email = ?", email).
 		Select()
 
@@ -52,7 +53,7 @@ func (r *userRepository) GetUserByEmail(email string) (*models.User, error) {
 		if err == pg.ErrNoRows {
 			return nil, ErrUserNotFound
 		}
-		return nil, ErrUserCreation
+		return nil, ErrRetrievingUser
 	}
 
 	return user, nil

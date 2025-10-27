@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"fmt"
-
 	"github.com/MartinLupa/secure-auth-service/microservice/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -95,9 +93,6 @@ func (h *AuthHandler) ValidateOTP(c *gin.Context) {
 	}
 
 	jwtToken, err := h.authService.ValidateOTP(otpData.Email, otpData.OTP)
-
-	fmt.Println("jwtToken	in handler: ", jwtToken)
-	fmt.Println("jwtToken error in handler: ", err)
 
 	if err != nil || jwtToken == "" {
 		c.JSON(400, gin.H{

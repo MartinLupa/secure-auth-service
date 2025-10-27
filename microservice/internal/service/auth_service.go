@@ -49,7 +49,7 @@ func (s *authService) Login(email, password string) (*models.User, error) {
 		return nil, err
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
+	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
 		return nil, ErrInvalidCredentials
 	}
 
@@ -76,16 +76,15 @@ func (s *authService) Signup(fullName, email, password, confirmPassword string) 
 		return nil, ErrPasswordMismatch
 	}
 
-	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
 	newUser := &models.User{
-		FullName: fullName,
-		Email:    email,
-		Password: string(hashedPassword),
+		FullName:     fullName,
+		Email:        email,
+		PasswordHash: string(hashedPassword),
 	}
 
 	user, err := s.userRepo.CreateUser(newUser)
@@ -152,12 +151,8 @@ func (s *authService) ResendOTP(email string) error {
 }
 
 func (s *authService) ValidateJWT(tokenString string) (*models.User, error) {
-	fmt.Println("[ValidateJWT service] tokenString: ", tokenString)
-
 	claims, err := jwt.ValidateAccessToken(tokenString, s.config.JWTSecret)
 
-	fmt.Println("[ValidateJWT service] claims: ", claims)
-	fmt.Println("[ValidateJWT service] err: ", err)
 	if err != nil {
 		return nil, err
 	}
