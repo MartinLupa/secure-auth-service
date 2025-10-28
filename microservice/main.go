@@ -36,7 +36,7 @@ func main() {
 	authRepo := repository.NewUserRepository(db)
 	emailService := service.NewEmailService(&cfg.EmailService)
 	authService := service.NewAuthService(&cfg.AuthService, authRepo, emailService)
-	authHandler := handlers.NewAuthHandler(authService)
+	authHandler := handlers.NewAuthHandler(&cfg.SocialAuth, authService)
 
 	// Gin router setup
 	router := gin.Default()
@@ -49,11 +49,20 @@ func main() {
 	}))
 
 	// Routes
+	// OTP-based workflow
 	router.POST("/login", authHandler.Login)
 	router.POST("/signup", authHandler.Signup)
 	router.POST("/otp/validate", authHandler.ValidateOTP)
 	router.POST("/otp/resend", authHandler.ResendOTP)
 	router.POST("/jwt/validate", authHandler.ValidateJWT)
+
+	// Google OAuth workflow
+	router.GET("/google/login", authHandler.GoogleLogin)
+	router.GET("/google/callback", authHandler.GoogleCallback)
+
+	// Github OAuth workflow
+	router.GET("/github/login", authHandler.GithubLogin)
+	router.GET("/github/callback", authHandler.GithubCallback)
 
 	err = router.Run(cfg.Server.Port)
 	if err != nil {

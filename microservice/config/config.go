@@ -13,6 +13,7 @@ type Config struct {
 	Server       ServerConfig
 	AuthService  AuthServiceConfig
 	EmailService EmailServiceConfig
+	SocialAuth   SocialAuthConfig
 	Database     DatabaseConfig
 }
 
@@ -30,6 +31,15 @@ type EmailServiceConfig struct {
 	Domain    string
 	APIKey    string
 	EmailFrom string
+}
+
+type SocialAuthConfig struct {
+	GoogleClientID     string
+	GoogleClientSecret string
+	GoogleRedirectURL  string
+	GithubClientID     string
+	GithubClientSecret string
+	GithubRedirectURL  string
 }
 
 type DatabaseConfig struct {
@@ -58,6 +68,14 @@ func Load() (*Config, error) {
 			Domain:    os.Getenv("MAILGUN_DOMAIN"),
 			APIKey:    os.Getenv("MAILGUN_API_KEY"),
 			EmailFrom: os.Getenv("EMAIL_FROM"),
+		},
+		SocialAuth: SocialAuthConfig{
+			GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+			GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+			GoogleRedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
+			GithubClientID:     os.Getenv("GITHUB_CLIENT_ID"),
+			GithubClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
+			GithubRedirectURL:  os.Getenv("GITHUB_REDIRECT_URL"),
 		},
 		Database: DatabaseConfig{
 			User:     os.Getenv("DB_USER"),

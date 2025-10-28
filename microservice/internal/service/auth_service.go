@@ -26,6 +26,7 @@ type AuthService interface {
 	ValidateOTP(email, code string) (string, error)
 	ResendOTP(email string) error
 	ValidateJWT(tokenString string) (*models.User, error)
+	GenerateSocialLoginSession(email, fullName string) (string, error)
 }
 
 type authService struct {
@@ -163,4 +164,20 @@ func (s *authService) ValidateJWT(tokenString string) (*models.User, error) {
 	}
 
 	return user, nil
+}
+
+func (s *authService) GenerateSocialLoginSession(email, fullName string) (string, error) {
+	user, err := s.userRepo.GetUserByEmail(email)
+
+	if err != nil {
+		return "", err
+	}
+
+	tokenString, err := jwt.GenerateAccessToken(user, s.config.JWTSecret, s.config.AccessTokenTTL)
+
+	if err != nil {
+		return "", ErrGeneratingJWT
+	}
+
+	return tokenString, nil
 }

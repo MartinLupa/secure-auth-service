@@ -12,8 +12,7 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-   console.log("authCookie: ", authCookie)
-   const response = await fetch('http://localhost:8000/jwt/validate', {
+   const response = await fetch(new URL(process.env.AUTH_SERVICE_JWT_VALIDATE_ENDPOINT || ''), {
     method: 'POST',
     headers: {
      'Content-Type': 'application/json',

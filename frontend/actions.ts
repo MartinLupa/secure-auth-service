@@ -11,7 +11,7 @@ export async function loginAction(prevState: any, formData: FormData) {
  }
 
  try {
-  const response = await fetch(`http://localhost:8000/login`, {
+  const response = await fetch(new URL(process.env.AUTH_SERVICE_LOGIN_ENDPOINT || ''), {
    method: 'POST',
    headers: { 'Content-Type': 'application/json' },
    body: JSON.stringify({ email, password }),
@@ -48,7 +48,7 @@ export async function signupAction(prevState: any, formData: FormData) {
  }
 
  try {
-  const response = await fetch(`http://localhost:8000/signup`, {
+  const response = await fetch(new URL(process.env.AUTH_SERVICE_SIGNUP_ENDPOINT || ''), {
    method: 'POST',
    headers: { 'Content-Type': 'application/json' },
    body: JSON.stringify({ full_name: fullName, email, password, confirm_password: confirmPassword }),
@@ -77,7 +77,7 @@ export async function verifyOTPAction(prevState: any, formData: FormData) {
   const cookieStore = await cookies()
   const loginIntentCookie = cookieStore.get('login_intent')
 
-  const response = await fetch(`http://localhost:8000/otp/validate`, {
+  const response = await fetch(new URL(process.env.AUTH_SERVICE_OTP_VALIDATE_ENDPOINT || ''), {
    method: 'POST',
    headers: { 'Content-Type': 'application/json' },
    body: JSON.stringify({ email: loginIntentCookie?.value, otp: otpCode }),

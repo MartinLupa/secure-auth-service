@@ -1,16 +1,30 @@
 package handlers
 
 import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"net/http"
+	"net/url"
+
+	"github.com/MartinLupa/secure-auth-service/microservice/config"
 	"github.com/MartinLupa/secure-auth-service/microservice/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/github"
+	"github.com/markbates/goth/providers/google"
+	"google.golang.org/api/idtoken"
 )
 
 type AuthHandler struct {
+	config      *config.SocialAuthConfig
 	authService service.AuthService
 }
 
-func NewAuthHandler(authService service.AuthService) *AuthHandler {
+func NewAuthHandler(cfg *config.SocialAuthConfig, authService service.AuthService) *AuthHandler {
 	return &AuthHandler{
+		config:      cfg,
 		authService: authService,
 	}
 }
@@ -158,4 +172,114 @@ func (h *AuthHandler) ValidateJWT(c *gin.Context) {
 		"message": "JWT validation successful",
 		"user":    user,
 	})
+}
+
+func (h *AuthHandler) GoogleLogin(c *gin.Context) {
+	goth.UseProviders(
+		google.New(h.config.GoogleClientID, h.config.GoogleClientSecret, h.config.GoogleRedirectURL, "email", "profile"),
+	)
+	gothic.BeginAuthHandler(c.Writer, c.Request)
+}
+
+func (h *AuthHandler) GoogleCallback(c *gin.Context) {
+	gothUser, err := gothic.CompleteUserAuth(c.Writer, c.Request)
+
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": "Failed to authenticate with Google: " + err.Error(),
+		})
+		return
+	}
+
+	payload, err := idtoken.Validate(context.Background(), gothUser.IDToken, "")
+
+	if err != nil {
+		panic(err)
+	}
+
+	jwtToken, err := h.authService.GenerateSocialLoginSession(payload.Claims["email"].(string), payload.Claims["name"].(string))
+
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": "Failed to generate session token: " + err.Error(),
+		})
+		return
+	}
+
+	state := c.Query("state")
+	decoded, _ := base64.StdEncoding.DecodeString(state)
+
+	var info struct {
+		RedirectURI string `json:"redirectUri"`
+	}
+
+	if err := json.Unmarshal(decoded, &info); err != nil {
+		c.String(http.StatusBadRequest, "Invalid state parameter")
+		return
+	}
+
+	redirectUrl, err := url.QueryUnescape(info.RedirectURI)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid redirect URI")
+		return
+	}
+
+	cookie := &http.Cookie{
+		Name:  "redirect_session_token",
+		Value: jwtToken,
+	}
+	c.SetCookieData(cookie)
+	c.Redirect(http.StatusFound, redirectUrl)
+}
+
+func (h *AuthHandler) GithubLogin(c *gin.Context) {
+	goth.UseProviders(
+		github.New(h.config.GithubClientID, h.config.GithubClientSecret, h.config.GithubRedirectURL, "email", "profile"),
+	)
+	gothic.BeginAuthHandler(c.Writer, c.Request)
+}
+
+func (h *AuthHandler) GithubCallback(c *gin.Context) {
+	gothUser, err := gothic.CompleteUserAuth(c.Writer, c.Request)
+
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": "Failed to authenticate with Github: " + err.Error(),
+		})
+		return
+	}
+
+	jwtToken, err := h.authService.GenerateSocialLoginSession(gothUser.Email, gothUser.Name)
+
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": "Failed to generate session token: " + err.Error(),
+		})
+		return
+	}
+
+	state := c.Query("state")
+	decoded, _ := base64.StdEncoding.DecodeString(state)
+
+	var info struct {
+		RedirectURI string `json:"redirectUri"`
+	}
+
+	if err := json.Unmarshal(decoded, &info); err != nil {
+		c.String(http.StatusBadRequest, "Invalid state parameter")
+		return
+	}
+
+	redirectUrl, err := url.QueryUnescape(info.RedirectURI)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid redirect URI")
+		return
+	}
+
+	cookie := &http.Cookie{
+		Name:  "redirect_session_token",
+		Value: jwtToken,
+	}
+	c.SetCookieData(cookie)
+	c.Redirect(http.StatusFound, redirectUrl)
 }
