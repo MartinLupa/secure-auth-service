@@ -117,7 +117,7 @@ flowchart TD
 2. **Set up the microservice environment variables**
    
    Create a `.env` file in the `microservice/` directory:
-   ```env
+   ```bash
    # Server Configuration
    PORT=:8080
 
@@ -152,7 +152,7 @@ flowchart TD
 3. **Set up the frontend environment variables**
    
    Create a `.env.local` file in the `frontend/` directory:
-   ```env
+   ```bash
    # Backend API Endpoints
    AUTH_SERVICE_LOGIN_ENDPOINT=http://localhost:8080/login
    AUTH_SERVICE_SIGNUP_ENDPOINT=http://localhost:8080/signup
@@ -358,7 +358,7 @@ sequenceDiagram
 
 ### Microservice (.env)
 
-\`\`\`env
+```bash
 # Server
 PORT=:8080
 
@@ -388,16 +388,16 @@ GOOGLE_REDIRECT_URL=http://localhost:8080/google/callback
 GITHUB_CLIENT_ID=your-client-id
 GITHUB_CLIENT_SECRET=your-client-secret
 GITHUB_REDIRECT_URL=http://localhost:8080/github/callback
-\`\`\`
+```
 
 ### Frontend (.env.local)
 
-\`\`\`env
+```bash
 AUTH_SERVICE_LOGIN_ENDPOINT=http://localhost:8080/login
 AUTH_SERVICE_SIGNUP_ENDPOINT=http://localhost:8080/signup
 AUTH_SERVICE_OTP_VALIDATE_ENDPOINT=http://localhost:8080/otp/validate
 AUTH_SERVICE_JWT_VALIDATE_ENDPOINT=http://localhost:8080/jwt/validate
-\`\`\`
+```
 
 ## Security Features
 
@@ -407,31 +407,6 @@ AUTH_SERVICE_JWT_VALIDATE_ENDPOINT=http://localhost:8080/jwt/validate
 - **CORS Protection**: Configured to allow only frontend origin
 - **HTTP-only Cookies**: Session tokens stored in secure cookies
 - **Middleware Protection**: Route-level authentication checks
-
-## Development
-
-### Running Tests
-\`\`\`bash
-# Backend tests
-cd microservice
-go test ./...
-
-# Frontend tests
-cd frontend
-npm test
-\`\`\`
-
-### Database Management
-
-Access PostgreSQL:
-\`\`\`bash
-docker exec -it <container-id> psql -U postgres -d secure_auth_db
-\`\`\`
-
-View logs:
-\`\`\`bash
-docker-compose logs -f db
-\`\`\`
 
 ## Troubleshooting
 
@@ -452,6 +427,3 @@ docker-compose logs -f db
    - Check redirect URLs match OAuth app settings
    - Ensure callback URLs are accessible
 
-## License
-
-This project is licensed under the MIT License.
