@@ -18,6 +18,7 @@ var (
 	ErrPasswordMismatch   = errors.New("passwords do not match")
 	ErrInvalidOTP         = errors.New("invalid OTP code")
 	ErrGeneratingJWT      = errors.New("error generating JWT token")
+	ErrSocialUserNotFound = errors.New("social login user not found")
 )
 
 type AuthService interface {
@@ -170,6 +171,9 @@ func (s *authService) GenerateSocialLoginSession(email, fullName string) (string
 	user, err := s.userRepo.GetUserByEmail(email)
 
 	if err != nil {
+		if errors.Is(err, repository.ErrUserNotFound) {
+			return "", ErrSocialUserNotFound
+		}
 		return "", err
 	}
 

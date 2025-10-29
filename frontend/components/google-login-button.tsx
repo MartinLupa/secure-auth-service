@@ -6,9 +6,10 @@ import { Button } from "./ui/button"
 export default function GoogleLoginButton() {
  const startLogin = () => {
   const redirectUri = encodeURIComponent(`${window.location.origin}/api/social-auth`);
-  const state = btoa(JSON.stringify({ redirectUri }));
+  const socialUserNotFoundRedirectUri = encodeURIComponent(`${window.location.origin}/signup?socialSignUp=true`);
+  const state = btoa(JSON.stringify({ redirectUri, socialUserNotFoundRedirectUri }));
 
-  redirect(`${process.env.AUTH_SERVICE_GOOGLE_CALLBACK_URL}&state=${state}`);
+  redirect(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_GOOGLE_CALLBACK_URL}&state=${state}`);
  };
 
  return (

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/MartinLupa/secure-auth-service/microservice/internal/models"
 	"github.com/go-pg/pg/v10"
@@ -34,6 +35,7 @@ func (r *userRepository) CreateUser(user *models.User) (*models.User, error) {
 
 	if err != nil {
 		if pgErr, ok := err.(pg.Error); ok && pgErr.IntegrityViolation() {
+			fmt.Println("User already exists")
 			return nil, ErrUserAlreadyExists
 		}
 		return nil, ErrUserCreation

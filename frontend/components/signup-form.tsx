@@ -16,27 +16,37 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { useActionState } from "react"
+import { useActionState, useEffect, useState } from "react"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { Terminal } from "lucide-react"
-import { redirect } from "next/navigation"
+import { redirect, useParams, useSearchParams } from "next/navigation"
 
 export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
   const [state, formAction, isPending] = useActionState(signupAction, null)
+  const searchParams = useSearchParams();
+  const [socialError, setSocialError] = useState<Error | null>(null)
 
   if (state?.success) {
     redirect('/login')
   }
 
+  useEffect(() => {
+    if (searchParams.get('socialSignUp') === 'true') {
+      setSocialError(
+        new Error("The email you tried to use is not registered with us. Please complete the signup form to create your account.")
+      )
+    }
+  }, [searchParams])
+
   return (
     <Card {...props}>
       <CardHeader>
         <CardTitle>Create an account</CardTitle>
-        {state?.error && (<Alert variant="destructive">
+        {state?.error || socialError && (<Alert variant="destructive">
           <Terminal />
           <AlertTitle>Signup error</AlertTitle>
           <AlertDescription>
-            {state.error}
+            {state?.error || socialError?.message}
           </AlertDescription>
         </Alert>)}
         <CardDescription>

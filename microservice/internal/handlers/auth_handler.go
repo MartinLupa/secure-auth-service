@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 
@@ -194,23 +195,20 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	payload, err := idtoken.Validate(context.Background(), gothUser.IDToken, "")
 
 	if err != nil {
-		panic(err)
-	}
-
-	jwtToken, err := h.authService.GenerateSocialLoginSession(payload.Claims["email"].(string), payload.Claims["name"].(string))
-
-	if err != nil {
 		c.JSON(400, gin.H{
-			"error": "Failed to generate session token: " + err.Error(),
+			"error": err.Error(),
 		})
 		return
 	}
 
+	// REFACTOR INTO REUSABLE FUNCTION - FROM HERE
+	// Get redirectUri and socialUserNotFoundRedirectUri from state parameter to handle redirects
 	state := c.Query("state")
 	decoded, _ := base64.StdEncoding.DecodeString(state)
 
 	var info struct {
-		RedirectURI string `json:"redirectUri"`
+		RedirectURI                   string `json:"redirectUri"`
+		SocialUserNotFoundRedirectURI string `json:"socialUserNotFoundRedirectUri"`
 	}
 
 	if err := json.Unmarshal(decoded, &info); err != nil {
@@ -221,6 +219,25 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	redirectUrl, err := url.QueryUnescape(info.RedirectURI)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Invalid redirect URI")
+		return
+	}
+
+	socialUserNotFoundRedirectUrl, err := url.QueryUnescape(info.SocialUserNotFoundRedirectURI)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid social user not found redirect URI")
+		return
+	}
+	//	TO HERE
+
+	jwtToken, err := h.authService.GenerateSocialLoginSession(payload.Claims["email"].(string), payload.Claims["name"].(string))
+
+	if err != nil {
+		if errors.Is(err, service.ErrSocialUserNotFound) {
+			c.Redirect(http.StatusFound, socialUserNotFoundRedirectUrl)
+		}
+		c.JSON(400, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 
