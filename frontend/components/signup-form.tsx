@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input"
 import { useActionState, useEffect, useState } from "react"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { Terminal } from "lucide-react"
-import { redirect, useParams, useSearchParams } from "next/navigation"
+import { redirect, useSearchParams } from "next/navigation"
 
 export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
   const [state, formAction, isPending] = useActionState(signupAction, null)
