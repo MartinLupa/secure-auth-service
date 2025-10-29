@@ -16,37 +16,43 @@ A full-stack authentication system featuring a Next.js frontend and a Go microse
 
 This project follows a microservices architecture with clear separation between the frontend and backend services.
 
-\`\`\`
-┌─────────────────────────────────────────────────────────────────┐
-│                         CLIENT BROWSER                          │
-│                      (Next.js Frontend)                         │
-│                     http://localhost:3000                       │
-└────────────────┬────────────────────────────────────────────────┘
-                 │
-                 │ HTTP/REST API
-                 │
-┌────────────────▼────────────────────────────────────────────────┐
-│                    GO MICROSERVICE                              │
-│                   (Gin Framework)                               │
-│                   http://localhost:8080                         │
-│                                                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │
-│  │   Handlers   │  │   Services   │  │ Repositories │        │
-│  │              │  │              │  │              │        │
-│  │ • Auth       │─▶│ • Auth       │─▶│ • User       │        │
-│  │ • OAuth      │  │ • Email      │  │              │        │
-│  └──────────────┘  └──────────────┘  └──────┬───────┘        │
-│                                              │                 │
-└──────────────────────────────────────────────┼─────────────────┘
-                                               │
-                                               │ SQL
-                                               │
-                                    ┌──────────▼──────────┐
-                                    │   PostgreSQL DB     │
-                                    │   (Docker)          │
-                                    │   Port: 5432        │
-                                    └─────────────────────┘
-\`\`\`
+```mermaid
+flowchart TD
+    %% Client
+    A["Client Browser
+    Next.js Frontend
+    localhost:3000"]
+
+    %% Go Microservice
+    B["Go Microservice
+    Gin Framework
+    localhost:8080"]
+
+    %% Layers inside the service
+    subgraph Service [" "]
+        direction TB
+        H["Handlers
+        • Auth
+        • OAuth"] --> S["Services
+        • Auth
+        • Email"]
+        S --> R["Repositories
+        • User"]
+    end
+
+    %% DB
+    D["PostgreSQL DB
+    Docker
+    Port: 5432"]
+
+    %% Connections
+    A -->|"HTTP/REST API"| B
+    R -->|"SQL"| D
+
+    %% Clean box style
+    classDef box fill:#f9f9f9,stroke:#333,stroke-width:1px,rx:5px,ry:5px;
+    class A,B,D,Service,H,S,R box;
+```
 
 ### Component Responsibilities
 
@@ -103,15 +109,15 @@ This project follows a microservices architecture with clear separation between 
 ### Installation
 
 1. **Clone the repository**
-   \`\`\`bash
+   ```bash
    git clone <repository-url>
    cd secure-auth-service
-   \`\`\`
+   ```
 
 2. **Set up the microservice environment variables**
    
    Create a `.env` file in the `microservice/` directory:
-   \`\`\`env
+   ```env
    # Server Configuration
    PORT=:8080
 
@@ -141,23 +147,23 @@ This project follows a microservices architecture with clear separation between 
    GITHUB_CLIENT_ID=your-github-client-id
    GITHUB_CLIENT_SECRET=your-github-client-secret
    GITHUB_REDIRECT_URL=http://localhost:8080/github/callback
-   \`\`\`
+   ```
 
 3. **Set up the frontend environment variables**
    
    Create a `.env.local` file in the `frontend/` directory:
-   \`\`\`env
+   ```env
    # Backend API Endpoints
    AUTH_SERVICE_LOGIN_ENDPOINT=http://localhost:8080/login
    AUTH_SERVICE_SIGNUP_ENDPOINT=http://localhost:8080/signup
    AUTH_SERVICE_OTP_VALIDATE_ENDPOINT=http://localhost:8080/otp/validate
    AUTH_SERVICE_JWT_VALIDATE_ENDPOINT=http://localhost:8080/jwt/validate
-   \`\`\`
+   ```
 
 4. **Start the database with Docker Compose**
-   \`\`\`bash
+   ```bash
    docker-compose up -d
-   \`\`\`
+   ```
    
    This will:
    - Start PostgreSQL on port 5432
@@ -166,20 +172,20 @@ This project follows a microservices architecture with clear separation between 
    - Seed with a test user (email: `user@example.com`, password: `user`)
 
 5. **Start the Go microservice**
-   \`\`\`bash
+   ```bash
    cd microservice
    go mod download
    go run main.go
-   \`\`\`
+   ```
    
    The API will be available at `http://localhost:8080`
 
 6. **Start the Next.js frontend**
-   \`\`\`bash
+   ```bash
    cd frontend
    npm install
    npm run dev
-   \`\`\`
+   ```
    
    The frontend will be available at `http://localhost:3000`
 
@@ -187,28 +193,21 @@ This project follows a microservices architecture with clear separation between 
 
 ### 1. Email/Password Signup Flow
 
-\`\`\`
-┌─────────┐                ┌──────────┐                ┌──────────┐
-│ Browser │                │ Next.js  │                │   Go     │
-│         │                │ Frontend │                │ Backend  │
-└────┬────┘                └────┬─────┘                └────┬─────┘
-     │                          │                           │
-     │  1. Fill signup form     │                           │
-     ├─────────────────────────▶│                           │
-     │                          │                           │
-     │                          │  2. POST /signup          │
-     │                          ├──────────────────────────▶│
-     │                          │                           │
-     │                          │                           │ 3. Hash password
-     │                          │                           │ 4. Store user in DB
-     │                          │                           │
-     │                          │  5. Success response      │
-     │                          │◀──────────────────────────┤
-     │                          │                           │
-     │  6. Redirect to login    │                           │
-     │◀─────────────────────────┤                           │
-     │                          │                           │
-\`\`\`
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant Frontend as Next.js Frontend<br/>(localhost:3000)
+    participant Backend as Go Backend<br/>(localhost:8080)
+
+    Note over Browser,Frontend: User interacts with UI
+    Browser->>Frontend: 1. Fill signup form
+    Frontend->>Backend: 2. POST /signup
+    Note right of Backend: Secure processing
+    Backend->>Backend: 3. Hash password (bcrypt)
+    Backend->>Backend: 4. Store user in PostgreSQL
+    Backend-->>Frontend: 5. { success: true }
+    Frontend-->>Browser: 6. Redirect to /login
+```
 
 **Steps:**
 1. User fills out signup form (full name, email, password, confirm password)
@@ -220,55 +219,31 @@ This project follows a microservices architecture with clear separation between 
 
 ### 2. Email/Password Login Flow with OTP
 
-\`\`\`
-┌─────────┐         ┌──────────┐         ┌──────────┐         ┌──────────┐
-│ Browser │         │ Next.js  │         │   Go     │         │ Mailgun  │
-│         │         │ Frontend │         │ Backend  │         │   API    │
-└────┬────┘         └────┬─────┘         └────┬─────┘         └────┬─────┘
-     │                   │                    │                     │
-     │  1. Enter email   │                    │                     │
-     │     & password    │                    │                     │
-     ├──────────────────▶│                    │                     │
-     │                   │                    │                     │
-     │                   │  2. POST /login    │                     │
-     │                   ├───────────────────▶│                     │
-     │                   │                    │                     │
-     │                   │                    │ 3. Verify password  │
-     │                   │                    │ 4. Generate OTP     │
-     │                   │                    │ 5. Store OTP secret │
-     │                   │                    │                     │
-     │                   │                    │  6. Send OTP email  │
-     │                   │                    ├────────────────────▶│
-     │                   │                    │                     │
-     │                   │  7. Success + email│                     │
-     │                   │◀───────────────────┤                     │
-     │                   │                    │                     │
-     │  8. Store email   │                    │                     │
-     │     in cookie     │                    │                     │
-     │  9. Redirect to   │                    │                     │
-     │     OTP page      │                    │                     │
-     │◀──────────────────┤                    │                     │
-     │                   │                    │                     │
-     │ 10. Enter OTP     │                    │                     │
-     ├──────────────────▶│                    │                     │
-     │                   │                    │                     │
-     │                   │ 11. POST /otp/     │                     │
-     │                   │     validate       │                     │
-     │                   ├───────────────────▶│                     │
-     │                   │                    │                     │
-     │                   │                    │ 12. Verify OTP      │
-     │                   │                    │ 13. Generate JWT    │
-     │                   │                    │                     │
-     │                   │ 14. Return JWT     │                     │
-     │                   │◀───────────────────┤                     │
-     │                   │                    │                     │
-     │ 15. Store JWT in  │                    │                     │
-     │     cookie        │                    │                     │
-     │ 16. Redirect to   │                    │                     │
-     │     /logged       │                    │                     │
-     │◀──────────────────┤                    │                     │
-     │                   │                    │                     │
-\`\`\`
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant F as Next.js Frontend<br/>(localhost:3000)
+    participant G as Go Backend<br/>(localhost:8080)
+    participant M as Mailgun API
+
+    B->>F: 1. Enter email & password
+    F->>G: 2. POST /login
+    G->>G: 3. Verify password
+    G->>G: 4. Generate OTP
+    G->>G: 5. Store OTP secret
+    G->>M: 6. Send OTP email
+    M-->>G: 7. Success + email sent
+    G-->>F: 8. Store email in cookie
+    F-->>B: 9. Redirect to OTP page
+
+    B->>F: 10. Enter OTP
+    F->>G: 11. POST /otp/validate
+    G->>G: 12. Verify OTP
+    G->>G: 13. Generate JWT
+    G-->>F: 14. Return JWT
+    F-->>B: 15. Store JWT in cookie
+    F-->>B: 16. Redirect to /logged
+```
 
 **Steps:**
 1. User enters email and password on login page
@@ -290,50 +265,26 @@ This project follows a microservices architecture with clear separation between 
 
 ### 3. OAuth Login Flow (Google/GitHub)
 
-\`\`\`
-┌─────────┐      ┌──────────┐      ┌──────────┐      ┌──────────┐
-│ Browser │      │ Next.js  │      │   Go     │      │  OAuth   │
-│         │      │ Frontend │      │ Backend  │      │ Provider │
-└────┬────┘      └────┬─────┘      └────┬─────┘      └────┬─────┘
-     │                │                 │                  │
-     │ 1. Click OAuth │                 │                  │
-     │    button      │                 │                  │
-     ├───────────────▶│                 │                  │
-     │                │                 │                  │
-     │                │ 2. GET /google/ │                  │
-     │                │    login        │                  │
-     │                ├────────────────▶│                  │
-     │                │                 │                  │
-     │                │                 │ 3. Redirect to   │
-     │                │                 │    OAuth provider│
-     │                │                 ├─────────────────▶│
-     │                │                 │                  │
-     │ 4. Redirect to OAuth consent     │                  │
-     │◀─────────────────────────────────┼──────────────────┤
-     │                │                 │                  │
-     │ 5. User grants │                 │                  │
-     │    permission  │                 │                  │
-     ├────────────────┼─────────────────┼─────────────────▶│
-     │                │                 │                  │
-     │                │                 │ 6. Callback with │
-     │                │                 │    auth code     │
-     │                │                 │◀─────────────────┤
-     │                │                 │                  │
-     │                │                 │ 7. Exchange code │
-     │                │                 │    for token     │
-     │                │                 ├─────────────────▶│
-     │                │                 │                  │
-     │                │                 │ 8. User profile  │
-     │                │                 │◀─────────────────┤
-     │                │                 │                  │
-     │                │                 │ 9. Check if user │
-     │                │                 │    exists in DB  │
-     │                │                 │ 10. Generate JWT │
-     │                │                 │                  │
-     │ 11. Redirect with JWT cookie     │                  │
-     │◀─────────────────────────────────┤                  │
-     │                │                 │                  │
-\`\`\`
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant F as Next.js Frontend
+    participant G as Go Backend
+    participant O as OAuth Provider<br/>(Google, GitHub, etc.)
+
+    B->>F: 1. Click "Sign in with OAuth"
+    F->>G: 2. GET /google/login
+    G->>O: 3. Redirect to OAuth consent
+    O-->>B: 4. Show consent screen
+    B->>O: 5. User grants permission
+    O->>G: 6. Callback with auth code
+    G->>O: 7. Exchange code for access token
+    O-->>G: 8. Return user profile
+    G->>G: 9. Check if user exists in DB
+    G->>G: 10. Create user if new
+    G->>G: 10. Generate JWT
+    G-->>B: 11. Redirect with JWT cookie
+```
 
 **Steps:**
 1. User clicks Google or GitHub login button
@@ -351,36 +302,25 @@ This project follows a microservices architecture with clear separation between 
 
 ### 4. Protected Route Access
 
-\`\`\`
-┌─────────┐              ┌──────────┐              ┌──────────┐
-│ Browser │              │ Next.js  │              │   Go     │
-│         │              │ Middleware│             │ Backend  │
-└────┬────┘              └────┬─────┘              └────┬─────┘
-     │                        │                         │
-     │ 1. Access /logged      │                         │
-     ├───────────────────────▶│                         │
-     │                        │                         │
-     │                        │ 2. Check session_token  │
-     │                        │    cookie               │
-     │                        │                         │
-     │                        │ 3. POST /jwt/validate   │
-     │                        ├────────────────────────▶│
-     │                        │                         │
-     │                        │                         │ 4. Verify JWT
-     │                        │                         │ 5. Check expiry
-     │                        │                         │
-     │                        │ 6. Valid/Invalid        │
-     │                        │◀────────────────────────┤
-     │                        │                         │
-     │ 7a. If valid: render   │                         │
-     │     protected page     │                         │
-     │◀───────────────────────┤                         │
-     │                        │                         │
-     │ 7b. If invalid:        │                         │
-     │     redirect to /login │                         │
-     │◀───────────────────────┤                         │
-     │                        │                         │
-\`\`\`
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant M as Next.js Middleware
+    participant G as Go Backend
+
+    B->>M: 1. GET /logged
+    M->>M: 2. Check session_token cookie
+    M->>G: 3. POST /jwt/validate
+    G->>G: 4. Verify JWT signature
+    G->>G: 5. Check expiry & claims
+    G-->>M: 6. { valid: true/false }
+
+    alt Valid JWT
+        M-->>B: 7a. Render protected page
+    else Invalid JWT
+        M-->>B: 7b. 302 Redirect to /login
+    end
+```
 
 **Steps:**
 1. User attempts to access protected route (`/logged`)
